@@ -11,7 +11,7 @@ pub struct CronAnalyzer {
 }
 
 impl CronAnalyzer {
-    pub fn from(expression: String) -> CronAnalyzer {
+    pub fn from_expr(expression: String) -> String {
         let split_expression = expression.trim().split_whitespace().collect::<Vec<&str>>();
 
         let second = SecondField {
@@ -36,7 +36,7 @@ impl CronAnalyzer {
             raw: split_expression[6].to_owned(),
         };
 
-        CronAnalyzer {
+        let analyzer = CronAnalyzer {
             second,
             minute,
             hour,
@@ -44,7 +44,8 @@ impl CronAnalyzer {
             month,
             day_of_week,
             year,
-        }
+        };
+        analyzer.analyze()
     }
 
     pub fn analyze(&self) -> String {
