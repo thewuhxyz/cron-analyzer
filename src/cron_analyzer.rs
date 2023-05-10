@@ -72,9 +72,9 @@ impl CronAnalyzer {
         let time: Option<[String; 3]> =
             match re.is_match(&second.raw) && re.is_match(&minute.raw) && re.is_match(&hour.raw) {
                 true => {
-                    let second = "0".to_owned() + &second.raw;
-                    let minute = "0".to_owned() + &minute.raw;
-                    let hour = "0".to_owned() + &hour.raw;
+                    let second = format!("0{}", &second.raw);
+                    let minute = format!("0{}", &minute.raw);
+                    let hour = format!("0{}", &hour.raw);
                     Some([
                         second[second.len() - 2..].to_owned(),
                         minute[minute.len() - 2..].to_owned(),
@@ -86,45 +86,35 @@ impl CronAnalyzer {
 
         match time {
             Some(t) => {
-                ("At ".to_owned()
-                    + &t[2]
-                    + ":"
-                    + &t[1]
-                    + ":"
-                    + &t[0]
-                    + " "
-                    + &day_of_month.analyze()
-                    + " "
-                    + &s
-                    + " "
-                    + &day_of_week.analyze()
-                    + " "
-                    + &month.analyze()
-                    + " "
-                    + &year.analyze())
-                    .trim()
-                    .to_owned()
+                format!(
+                    "At {}:{}:{} {} {} {} {} {}",
+                    &t[2],
+                    &t[1],
+                    &t[0],
+                    &day_of_month.analyze(),
+                    &s,
+                    &day_of_week.analyze(),
+                    &month.analyze(),
+                    &year.analyze()
+                )
+                .trim()
+                .to_owned()
                     + "."
             }
             None => {
-                ("At ".to_owned()
-                    + &second.analyze()
-                    + " "
-                    + &minute.analyze()
-                    + " "
-                    + &hour.analyze()
-                    + " "
-                    + &day_of_month.analyze()
-                    + " "
-                    + &s
-                    + " "
-                    + &day_of_week.analyze()
-                    + " "
-                    + &month.analyze()
-                    + " "
-                    + &year.analyze())
-                    .trim()
-                    .to_owned()
+                format!(
+                    "At {} {} {} {} {} {} {} {}",
+                    &second.analyze(),
+                    &minute.analyze(),
+                    &hour.analyze(),
+                    &day_of_month.analyze(),
+                    &s,
+                    &day_of_week.analyze(),
+                    &month.analyze(),
+                    &year.analyze()
+                )
+                .trim()
+                .to_owned()
                     + "."
             }
         }
@@ -190,8 +180,8 @@ impl<'a> Field<'a> for MinuteField {
 
     fn analyze(&self) -> String {
         match self.raw.as_str() {
-            "*" => "".to_owned(),
-            _ => "past ".to_owned() + self.format_field(false).as_str(),
+            "*" => format!(""),
+            _ => format!("past {}", self.format_field(false)),
         }
     }
 }
@@ -224,8 +214,8 @@ impl<'a> Field<'a> for HourField {
 
     fn analyze(&self) -> String {
         match self.raw.as_str() {
-            "*" => "".to_owned(),
-            _ => "past ".to_owned() + self.format_field(false).as_str(),
+            "*" => format!(""),
+            _ => format!("past {}", self.format_field(false)),
         }
     }
 }
@@ -258,8 +248,8 @@ impl<'a> Field<'a> for DayOfMonthField {
 
     fn analyze(&self) -> String {
         match self.raw.as_str() {
-            "*" => "".to_owned(),
-            _ => " on ".to_owned() + self.format_field(false).as_str(),
+            "*" => format!(""),
+            _ => format!("on {}", self.format_field(false)),
         }
     }
 }
@@ -319,8 +309,8 @@ impl<'a> Field<'a> for MonthField {
 
     fn analyze(&self) -> String {
         match self.raw.as_str() {
-            "*" => "".to_owned(),
-            _ => " in ".to_owned() + self.format_field(true).as_str(),
+            "*" => format!(""),
+            _ => format!("in {}", self.format_field(true)),
         }
     }
 }
@@ -370,8 +360,8 @@ impl<'a> Field<'a> for DayOfWeekField {
 
     fn analyze(&self) -> String {
         match self.raw.as_str() {
-            "*" => "".to_owned(),
-            _ => " on ".to_owned() + self.format_field(true).as_str(),
+            "*" => format!(""),
+            _ => format!("on {}", self.format_field(true)),
         }
     }
 }
@@ -403,13 +393,11 @@ impl<'a> Field<'a> for YearField {
 
     fn analyze(&self) -> String {
         match self.raw.as_str() {
-            "*" => "".to_owned(),
-            _ => " in ".to_owned() + self.format_field(false).as_str(),
+            "*" => format!(""),
+            _ => format!("in {}", self.format_field(false)),
         }
     }
 }
-
-
 
 pub trait Field<'a> {
     fn raw(&self) -> String;
@@ -424,7 +412,6 @@ pub trait Field<'a> {
         match number.parse::<usize>() {
             Err(_) => String::from("Not a string"),
             Ok(num) => {
-                // let some = if num > 20 { num % 10 } else { num };
                 match num % 10 {
                     1 => num.to_string() + "st",
                     2 => num.to_string() + "nd",
@@ -435,7 +422,7 @@ pub trait Field<'a> {
         }
     }
 
-    fn format_field(&self, d_or_m: bool) -> String {
+    fn format_field(&self, day_of: bool) -> String {
         let raw_string = self.raw();
         let name = self.name();
         let formatted_sections = raw_string
@@ -443,47 +430,45 @@ pub trait Field<'a> {
             .map(|section| self.format_field_section(section))
             .collect::<Vec<String>>();
         let formatted_string = match formatted_sections.len() {
-            0 => "".to_string(),
-            1 => formatted_sections[0].to_string(),
-            2 => (formatted_sections[0].to_owned() + "and" + &formatted_sections[1]).to_string(),
+            0 => format!(""),
+            1 => format!("{}", formatted_sections[0].to_string()),
+            2 => format!("{} and {}", &formatted_sections[0], &formatted_sections[1]),
             _ => {
-                formatted_sections[0..formatted_sections.len() - 1].join(",")
-                    + ", and"
-                    + &formatted_sections[formatted_sections.len() - 1]
+                format!(
+                    "{}, and {}",
+                    &formatted_sections[0..formatted_sections.len() - 1].join(", "),
+                    &formatted_sections[formatted_sections.len() - 1]
+                )
             }
         };
-        let some = match d_or_m {
-            true => " ".to_owned(),
-            false => name.to_owned() + " ",
+        let some = match day_of {
+            true => "".to_owned(),
+            false => format!("{} ", &name),
         };
-        println!("to cancel: {}{}", &some, &formatted_string);
-        (some + &formatted_string)
+        // println!("to cancel: {}{}", &some, &formatted_string);
+        format!("{}{}", &some, &formatted_string)
             .replace("every 1st", "every")
-            .replace((name.to_owned() + " every").as_str(), "every")
-            .replace((", ".to_owned() + &name).as_str(), ", ")
-            .replace((", and ".to_owned() + &name).as_str(), ", and ")
+            .replace(&format!("{} every", &name), "every")
+            .replace(&format!(", {}", &name), ", ")
+            .replace(&format!(", and {}", &name), ", and ")
     }
 
     fn format_field_section(&self, section: &str) -> String {
-        // let re = Regex::new(r"\d+|.").unwrap();
-        // let some = re.find(field).expect("could not find match").as_str();
-
         let raw_string = section.to_owned();
         let selection = self.selection();
         let max = self.max();
         let name = self.name();
 
         if raw_string == "*" {
-            return "every ".to_owned() + &self.name();
+            return format!("every {}", &name);
         } else {
             let re = Regex::new(r"\d+|\w+|.").unwrap();
 
-            // let some = field.matches(r"\d+|.").collect::<Vec<&str>>();
             let sections = re
                 .find_iter(&raw_string)
                 .map(|m| self.convert_if_word(m.as_str()))
                 .collect::<Vec<String>>();
-            println!("some: {:?}", &sections);
+            // println!("some: {:?}", &sections);
 
             let date_from_selection = |index: usize| match &selection {
                 None => index.to_string(),
@@ -494,28 +479,25 @@ pub trait Field<'a> {
                 Ok(index) => match sections.len() {
                     1 => "".to_owned() + &date_from_selection(index),
                     3 => {
-                        // if let Ok(num) = some[2].parse::<usize>(){};
                         match sections[2].parse::<usize>() {
                             Err(_) => "".to_owned(),
                             Ok(num) => match sections[1].as_str() {
                                 "/" => {
-                                    "every ".to_owned()
-                                        + &self.suffix(&sections[2])
-                                        + " "
-                                        + &name
-                                        + " from "
-                                        + &date_from_selection(index)
-                                        + " through "
-                                        + &date_from_selection(max)
+                                    format!(
+                                        "every {} {} from {} through {}",
+                                        &self.suffix(&sections[2]),
+                                        &name,
+                                        &date_from_selection(index),
+                                        &date_from_selection(max)
+                                    )
                                 }
                                 "-" => {
-                                    "every ".to_owned()
-                                        + " "
-                                        + &name
-                                        + " from "
-                                        + &date_from_selection(index)
-                                        + " through "
-                                        + &date_from_selection(num)
+                                    format!(
+                                        "every {} from {} through {}",
+                                        &name,
+                                        &date_from_selection(index),
+                                        &date_from_selection(num)
+                                    )
                                 }
                                 _ => "".to_owned(),
                             },
@@ -529,15 +511,13 @@ pub trait Field<'a> {
                             && sections[4].parse::<usize>().unwrap() >= 1
                         {
                             true => {
-                                "every ".to_owned()
-                                    + &self.suffix(&sections[4])
-                                    + " "
-                                    + &name
-                                    + " "
-                                    + " from "
-                                    + &date_from_selection(index)
-                                    + " through "
-                                    + &date_from_selection(num)
+                                format!(
+                                    "every {} {} from {} through {}",
+                                    &self.suffix(&sections[4]),
+                                    &name,
+                                    &date_from_selection(index),
+                                    &date_from_selection(num)
+                                )
                             }
                             false => "".to_owned(),
                         }
@@ -551,7 +531,7 @@ pub trait Field<'a> {
                         && sections[0] == "*"
                     {
                         true => {
-                            "every ".to_owned() + " " + &self.suffix(&sections[2]) + " " + &name
+                            format!("every {} {}", &self.suffix(&sections[2]), &name)
                         }
                         false => "".to_owned(),
                     }
@@ -560,4 +540,3 @@ pub trait Field<'a> {
         }
     }
 }
-
